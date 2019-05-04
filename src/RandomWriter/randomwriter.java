@@ -2,104 +2,93 @@
 Mizuki Hashimoto
 04/12/2019
 
-This is random writer programme.
+This is random writer programme using Arraylist of Linked List as the words container.
 This programme will output randomly replaced text of the text file chosen by the user
 in the another text file chosen by the user.
-The user also can change the input and the output lengths.
+The user also can change the output lengths.
 -----------------------------------------------------------------*/
 
 package RandomWriter;
 
 import java.io.*;
 import java.util.*;
-public class randomwriter
-{
-    public static void main(String[] args) throws IOException
-    {
-        //Get file name arguments from command line or interactively as entered by user
-        String sourceFileName = "midsum.txt"; //interactively get this info;
-        String resultFileName  = "result16978.txt"; //interactively get this info;
-        int N = Integer.parseInt("16978"); //interactively get this info;;
+
+public class randomwriter{
+    public static void main(String[] args) throws IOException{
+        String sourceFileName; //input file name
+        String resultFileName; //output file name
+        int N; //interactively get this info;;
         int nWords = 0;
-        int nFirst = 100;
+        int index = 0;
         long startTime; //for emperical time measurement
         long stopTime;  //elapsed time is difference in millisec
 
+        Scanner sc = new Scanner(System.in);
+        System.out.println("This is the random writer.");
+        System.out.print("Choose a text file to input: ");
+        sourceFileName = sc.next(); //get input file name
+        System.out.print("What is the name of file to output?: ");
+        resultFileName = sc.next(); //get output file name
+        System.out.print("How many words do you want to output?: ");
+        N = sc.nextInt(); //get number of words to output
+
         //Data structure declarations go here
-        //...........
-        //this is a simple linked list of all words (strings)
-        LinkedList <String> words= new LinkedList <String>();
+        ArrayList <String> unique = new ArrayList<>(); //arraylist of unique words
 
         //this is an arraylist of linked lists of strings
-        ArrayList <LinkedList<String>> byFirstLetter = new ArrayList <LinkedList<String>>(27);
-        //initialize this array of linkedlists
-        for(int i=0; i<27; i++){
-            byFirstLetter.add(i,new LinkedList<String>());
-        }
+        ArrayList <LinkedList<String>> follows = new ArrayList <>(); //arraylist of LL of the words following specific unique words
 
         //Prepare files
         Scanner dataFile = new Scanner(new FileReader(sourceFileName));
         PrintWriter outFile = new PrintWriter(new FileWriter(resultFileName));
         //Read a line from the source file until end of file
-        String firstWord = dataFile.next();
-        String secondWord;
+        String current = dataFile.next(); //current word
+        String first = current; //first word
+        String next; //next word following first word
         startTime = System.currentTimeMillis();
+
         while(dataFile.hasNext()){
-            secondWord = dataFile.next();
-            nWords++;
-            if(nWords % 1000 ==0) System.out.println(nWords+" words");
-            //only print the first N words for debugging
-            //remove or comment out when you have built in a
-            //a storage structure
-            //..............
-            if(nWords<= nFirst){
-                outFile.print(firstWord+" ");
-                outFile.flush();
+            next = dataFile.next();
+            if(unique.indexOf(current) == -1){ //if unique is not containing current word
+                unique.add(current); //add current word into unique
+                follows.add(index, new LinkedList<>()); //construct a LL into follows
+                follows.get(index).add(next); //add next word into LL of follows
+                index++;
+            } else{ //if unique is already containing current word
+                follows.get(unique.indexOf(current)).add(next); //add next word into corresponding LL of follows
             }
-            words.add(firstWord);//adding word to lone linked list for demo only
-
-            //and put words into lists by their first letter
-            char c = Character.toLowerCase(firstWord.charAt(0));
-            int ci = (c>='a' && c<='z')? c-'a' : 26;
-            ((LinkedList)(byFirstLetter.get(ci))).add(firstWord);
-
-            //look for first word in the structure
-            // and add the second word as the follow
-            //...........
-
-            firstWord = secondWord;
+            current = next;
+            nWords++;
+            //if(nWords % 1000 == 0)
+              //  System.out.println(nWords+" words"); //print number of words each 1000 words
         }
-        //add the final word to the structure
-        //it may be the only entry without a follow word
-        //but it needs to be in the list of unique words
-        //...........
+        //Put first word into end of follows
+        if(unique.indexOf(current) == -1){
+            unique.add(current);
+            follows.add(index, new LinkedList<>());
+            follows.get(index).add(first);
+        } else{
+            follows.get(unique.indexOf(current)).add(first);
+        }
+        nWords++;
+        System.out.println(nWords+" words"); //print total number of words
+
         stopTime = System.currentTimeMillis();
         System.out.println("Elapsed input time = "+(stopTime-startTime)+" msecs.");
-
         startTime = stopTime;
-        //  Let's dump the front of the list to verify same sequence
-        outFile.println(N+"\n------------from list----------------");
-        outFile.flush();
-        System.gc();
-        for(int i=0; i<N; i++){
-            outFile.print(words.get(i)+" ");
-        }
-        //   Level 0: random selection of words from lone list
+
+        //Level 1: choose the next word based on one previous word
         outFile.println("\n------------random list----------------");
         outFile.flush();
         Random rand = new Random();
+        int rn = rand.nextInt(unique.size()); //get random number
+        String firstWord = unique.get(rn); //get a word from unique at random index number
+        String nextWord;
         for (int i=0; i<N; i++){
-            outFile.print(words.get(rand.nextInt(nWords))+" ");
-        }
-
-        //  Random words from each letter category
-        outFile.println("\n------------random alpha list----------------");
-        outFile.flush();
-        for (int i=0; i<27; i++){
-            LinkedList ll = (LinkedList)(byFirstLetter.get(i));
-            int lllen = ll.size();
-            //     outFile.print(ll);
-            if(lllen>1)outFile.print(ll.get(rand.nextInt(lllen))+" ");
+            nextWord = follows.get(rn).get(rand.nextInt(follows.get(rn).size())); //get a word from follows at random index number
+            outFile.print(firstWord + " ");
+            firstWord = nextWord;
+            rn = unique.indexOf(firstWord); //search unique for nextWord that matches the word from the LL
         }
         outFile.flush();
         outFile.close();
